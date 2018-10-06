@@ -36,7 +36,7 @@ version = next((line.split('=')[1].strip().replace("'", '')
                                               'pkg_tracker',
                                               '__init__.py'))
                 if line.startswith('__version__ = ')),
-               '0.0.dev0')
+               '0.0.dev4')
 
 setup(
     name="pkg_tracker",
@@ -49,16 +49,15 @@ setup(
     description='open pull request via circle-ci',
     long_description=readme,
     packages=find_packages(),
-    install_requires=,
+    install_requires=requires,
     license="MIT",
     classifiers=[
         'Programming Language :: Python :: 3.6',
         'License :: OSI Approved :: MIT License',
     ],
-    entry_points=
-    """
-      # -*- Entry points: -*-
-      [console_scripts]
-      update = pkg_tracker.update:update
-    """,
+    entry_points={
+          'console_scripts': [
+          'pkgtrack = pkg_tracker.update:update'
+          ]
+        },
 )
