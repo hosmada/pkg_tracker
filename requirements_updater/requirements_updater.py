@@ -1,7 +1,6 @@
 from datetime import datetime
-import subprocess
 import os
-from github import GitHub, InputGitTreeElement
+from github import Github, InputGitTreeElement
 
 
 CIRCLE_PROJECT_USERNAME = os.environ.get('CIRCLE_PROJECT_USERNAME')
@@ -26,7 +25,7 @@ class RequirementsUpdater:
         new_commit = self._commit_requirements_diff(repo)
         branch = self._branch_name()
         repo.create_git_ref(ref='refs/heads/'+branch, sha=new_commit.sha)
-        pull = self._create_pull(branch)
+        self._create_pull(repo, branch)
 
     @staticmethod
     def _raise_unvalid_env():
@@ -37,7 +36,7 @@ class RequirementsUpdater:
         if not GITHUB_ACCESS_TOKEN:
             raise Exception("$GITHUB_ACCESS_TOKEN isn't set")
 
-    def _commit_requirements_diff(self):
+    def _commit_requirements_diff(self, repo):
         head_ref = repo.get_git_ref(self.base)
         latest_commit = repo.get_git_commit(head_ref.object.sha)
         base_tree = latest_commit.tree
@@ -72,14 +71,14 @@ class RequirementsUpdater:
         '''
         return GITHUB_ACCESS_TOKEN
 
-    def _create_pull(self, branch):
+    def _create_pull(self, repo, branch):
         title = f'{TITLE_PREFIX}{self.created_at}'
         return repo.create_pull(
-            f'requirements update at {self.created_at} UTC',
+            title,
             'body',
             self.base,
             branch,
         )
 
     def _need_to_commit(self):
-        return ENV['CIRCLE_BRANCH'] in self.work_branches
+        return os.environ.get('CIRCLE_BRANCH') in self.work_branches
