@@ -1,0 +1,31 @@
+version: 2
+jobs:
+  build_and_test:
+    working_directory: ~/saturn
+
+    docker:
+      - image: circleci/python:3.6.2
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          key: requirements-{{ .Branch }}-{{ checksum "requirements.txt" }}
+
+      - run:
+          name: setup venv and pip install
+          command: |
+            python -m venv .venv
+            source .venv/bin/activate
+            pip install -r requirements.txt
+
+      - save_cache:
+          key: requirements-{{ .Branch }}-{{ checksum "requirements.txt" }}
+          paths:
+            - .venv
+
+      - run:
+          name: lint
+          command: |
+            source .venv/bin/activate
+            flake8 ./
