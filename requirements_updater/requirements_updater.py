@@ -10,8 +10,9 @@ GITHUB_ACCESS_TOKEN = os.environ.get('GITHUB_ACCESS_TOKEN')
 BRANCH_PREFIX = 'requirements-update'
 TITLE_PREFIX = 'package update at '
 
+
 class RequirementsUpdater:
-    def __init__(self, work_branches=['master'], base="master")
+    def __init__(self, work_branches=['master'], base="master"):
         self.work_branches = work_branches
         self.base = base
         self.github_access_token = self._get_github_access_token()
@@ -24,15 +25,18 @@ class RequirementsUpdater:
         repo = self._get_repo()
         new_commit = self._commit_requirements_diff(repo)
         branch = self._branch_name()
-        repo.create_git_ref(ref='refs/heads/' + branch, sha=new_commit.sha)
+        repo.create_git_ref(ref='refs/heads/'+branch, sha=new_commit.sha)
         pull = self._create_pull(branch)
-    
+
     @staticmethod
     def _raise_unvalid_env():
-        raise Exception("$CIRCLE_PROJECT_USERNAME isn't set") if not CIRCLE_PROJECT_USERNAME
-        raise Exception("$CIRCLE_PROJECT_REPONAME isn't set") if not CIRCLE_PROJECT_REPONAME
-        raise Exception("$GITHUB_ACCESS_TOKEN isn't set") if not GITHUB_ACCESS_TOKEN
-    
+        if not CIRCLE_PROJECT_USERNAME:
+            raise Exception("$CIRCLE_PROJECT_USERNAME isn't set")
+        if not CIRCLE_PROJECT_REPONAME:
+            raise Exception("$CIRCLE_PROJECT_REPONAME isn't set")
+        if not GITHUB_ACCESS_TOKEN:
+            raise Exception("$GITHUB_ACCESS_TOKEN isn't set")
+
     def _commit_requirements_diff(self):
         head_ref = repo.get_git_ref(self.base)
         latest_commit = repo.get_git_commit(head_ref.object.sha)
@@ -53,12 +57,14 @@ class RequirementsUpdater:
             tree=new_tree
         )
 
-
     def _get_repo(self):
         git = Github(GITHUB_ACCESS_TOKEN)
         repo_name = self._repo_name()
         return git.get_repo(repo_name)
-    
+
+    def _branch_name(self):
+        return f'{BRANCH_PREFIX}{self.created_at}'
+
     @staticmethod
     def _get_github_access_token(self):
         '''
@@ -66,13 +72,10 @@ class RequirementsUpdater:
         '''
         return GITHUB_ACCESS_TOKEN
 
-    def _branch_name(self):
-        return f'{BRANCH_PREFIX}{self.created_at}'
-
     def _create_pull(self, branch):
-        title = "{TITLE_PREFIX}{self.created_at}"
+        title = f'{TITLE_PREFIX}{self.created_at}'
         return repo.create_pull(
-            'requirements update at {self.created_at} UTC',
+            f'requirements update at {self.created_at} UTC',
             'body',
             self.base,
             branch,
