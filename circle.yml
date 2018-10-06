@@ -1,7 +1,7 @@
 version: 2
 jobs:
   build:
-    working_directory: ~/requirements_updater
+    working_directory: ~/pkg_tracker
 
     docker:
       - image: circleci/python:3.6.2
@@ -28,4 +28,4 @@ jobs:
           name: lint
           command: |
             source .venv/bin/activate
-            flake8 requirements_updater
+            flake8 pkg_tracker
