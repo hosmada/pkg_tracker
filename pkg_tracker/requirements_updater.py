@@ -63,7 +63,7 @@ class RequirementsUpdater:
 
     @staticmethod
     def _repo_name():
-        return f'{os.environ["CIRCLE_PROJECT_USERNAME"]}/{os.environ["CIRCLE_PROJECT_REPONAME"]}'
+        return f'{CIRCLE_PROJECT_USERNAME}/{CIRCLE_PROJECT_REPONAME}'
 
     def _branch_name(self):
         return f'{BRANCH_PREFIX}{self.created_at}'
