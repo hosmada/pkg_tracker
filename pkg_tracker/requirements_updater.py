@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+import re
 from github import Github, InputGitTreeElement
 
 
@@ -22,10 +23,11 @@ class RequirementsUpdater:
         if not self._need_to_commit():
             return
         repo = self._get_repo()
+        old_packages, new_packages = self._get_old_and_new_packages()
         new_commit = self._commit_requirements_diff(repo)
         branch = self._branch_name()
         repo.create_git_ref(ref='refs/heads/'+branch, sha=new_commit.sha)
-        self._create_pull(repo, branch)
+        self._create_pull(repo, branch, old_packages, new_packages)
 
     @staticmethod
     def _raise_unvalid_env():
@@ -36,12 +38,10 @@ class RequirementsUpdater:
         if not GITHUB_ACCESS_TOKEN:
             raise Exception("$GITHUB_ACCESS_TOKEN isn't set")
 
-    def _commit_requirements_diff(self, repo):
+    def _commit_requirements_diff(self, repo, new_packages):
         head_ref = repo.get_git_ref(f'heads/{self.base}')
         latest_commit = repo.get_git_commit(head_ref.object.sha)
         base_tree = latest_commit.tree
-        os.system('pip install --upgrade -r requirements.txt --user')
-        new_packages = os.popen('pip freeze').read()
         new_tree = repo.create_git_tree(
             [InputGitTreeElement(
                 path="requirements.txt",
@@ -55,6 +55,13 @@ class RequirementsUpdater:
             parents=[latest_commit],
             tree=new_tree
         )
+
+    @staticmethod
+    def _get_old_and_new_packages(self):
+        old_packages = os.popen('pip freeze').read()
+        os.system('pip install --upgrade -r requirements.txt --user')
+        new_packages = os.popen('pip freeze').read()
+        return old_packages, new_packages
 
     def _get_repo(self):
         git = Github(GITHUB_ACCESS_TOKEN)
@@ -75,14 +82,35 @@ class RequirementsUpdater:
         '''
         return GITHUB_ACCESS_TOKEN
 
-    def _create_pull(self, repo, branch):
+    def _create_pull(self, repo, branch, old_packages, new_packages):
         title = f'{TITLE_PREFIX}{self.created_at}'
+        body = self._generate_pull_body(old_packages, new_packages)
         return repo.create_pull(
             title,
-            'body',
+            body,
             self.base,
             branch,
         )
 
     def _need_to_commit(self):
         return os.environ.get('CIRCLE_BRANCH') in self.work_branches
+
+    def _generate_pull_body(self, old_packages, new_packages):
+        pkg_diff_list = list()
+        for old_pkg, new_pkg in zip(
+                self._packages_to_list(old_packages),
+                self._packages_to_list(new_packages)
+            ):
+            if old_pkg == new_pkg:
+                continue
+            pkg_name = re.sub(r'=.*', '', new_pkg)
+            old_version = old_pkg.lstrip(f"{pkg_name}==")
+            new_version = new_pkg.lstrip(f"{pkg_name}==")
+            row = f'- [ ] {pkg_name} {old_version} -> {new_version}'
+            pkg_diff_list.append(row)
+        return '\n'.join(pkg_diff_list)
+
+    @staticmethod
+    def _packages_to_list(packages):
+        return packages.split('\n')
+
