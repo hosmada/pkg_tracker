@@ -16,5 +16,6 @@ def _parse_args(args):
     elif len(args) >= 2:
         return args[1].split(','), args[2]
 
+
 if __name__ == "__main__":
     main()

@@ -98,9 +98,9 @@ class RequirementsUpdater:
     def _generate_pull_body(self, old_packages, new_packages):
         pkg_diff_list = list()
         for old_pkg, new_pkg in zip(
-                self._packages_to_list(old_packages),
-                self._packages_to_list(new_packages)
-            ):
+            self._packages_to_list(old_packages),
+            self._packages_to_list(new_packages)
+        ):
             if old_pkg == new_pkg:
                 continue
             pkg_name = re.sub(r'=.*', '', new_pkg)
@@ -113,4 +113,3 @@ class RequirementsUpdater:
     @staticmethod
     def _packages_to_list(packages):
         return packages.split('\n')
-
