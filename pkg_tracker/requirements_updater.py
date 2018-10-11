@@ -24,7 +24,7 @@ class RequirementsUpdater:
             return
         repo = self._get_repo()
         old_packages, new_packages = self._get_old_and_new_packages()
-        new_commit = self._commit_requirements_diff(repo)
+        new_commit = self._commit_requirements_diff(repo, new_packages)
         branch = self._branch_name()
         repo.create_git_ref(ref='refs/heads/'+branch, sha=new_commit.sha)
         self._create_pull(repo, branch, old_packages, new_packages)
@@ -56,12 +56,22 @@ class RequirementsUpdater:
             tree=new_tree
         )
 
-    @staticmethod
     def _get_old_and_new_packages(self):
-        old_packages = os.popen('pip freeze').read()
-        os.system('pip install --upgrade -r requirements.txt --user')
-        new_packages = os.popen('pip freeze').read()
+        old_packages = os.popen('cat requirements.txt').read()
+        os.system('pip install --upgrade --no-cache-dir -r requirements.txt')
+        new_packages = self._pure_new_packages(
+            old_packages, os.popen('pip freeze').read()
+        )
         return old_packages, new_packages
+
+    def _pure_new_packages(self, old_packages, new_packages):
+        old_pkg_list = self._packages_to_list(old_packages)
+        new_pkg_list = self._packages_to_list(new_packages)
+        diff_pkg_list = list(set(new_pkg_list) - set(old_pkg_list))
+        return '\n'.join(
+            [pkg for pkg in new_pkg_list if self._pkg_name(pkg) not in diff_pkg_list]
+        )
+        
 
     def _get_repo(self):
         git = Github(GITHUB_ACCESS_TOKEN)
@@ -103,7 +113,7 @@ class RequirementsUpdater:
         ):
             if old_pkg == new_pkg:
                 continue
-            pkg_name = re.sub(r'=.*', '', new_pkg)
+            pkg_name = self._pkg_name(new_pkg)
             old_version = old_pkg.lstrip(f"{pkg_name}==")
             new_version = new_pkg.lstrip(f"{pkg_name}==")
             row = f'- [ ] {pkg_name} {old_version} -> {new_version}'
@@ -113,3 +123,7 @@ class RequirementsUpdater:
     @staticmethod
     def _packages_to_list(packages):
         return packages.split('\n')
+
+    @staticmethod
+    def _pkg_name(pkg_row):
+        return re.sub(r'=.*', '', new_pkg)

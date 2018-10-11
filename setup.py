@@ -21,7 +21,7 @@ version = next((line.split('=')[1].strip().replace("'", '')
                                               'pkg_tracker',
                                               '__init__.py'))
                 if line.startswith('__version__ = ')),
-               '0.0.dev8')
+               '0.0.dev15')
 
 setup(
     name="pkg_tracker",
