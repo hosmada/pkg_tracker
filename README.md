@@ -16,8 +16,7 @@ This package currently works only with circleci　workflow.
 
 
 ## Usage
-### Setting
-### Getting your Github access token.
+### Get your Github access token.
 1. access your [developer setting page](https://github.com/settings/depelopers).
 2. click `Personal access tokens` tab.
 3. you can generate personal access tokens.
@@ -62,21 +61,14 @@ workflows:
       - update_requirements
 ```
 
-### Command line argument
-### The first argument
-The first argument is the branch name you want this command.
-Such like this, 
+## Command line argument
 ```
-pkg-tracker master,feature-foo,feature-bar
+pkgtrack {the branch name you want to work this command} {the branch name merged the commit into}
 ```
-Default is only master.
-
-### The second argument
-The second argument is the branch name merged the commit into.
-Such like this, 
-
+Both argument is master by default.
+Example:
 ```
-pkg-tracker master develop,stg
+pkgtrack master,feature/auto_pkg_update develop
 ```
 
 
