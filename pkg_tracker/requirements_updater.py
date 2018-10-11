@@ -69,9 +69,9 @@ class RequirementsUpdater:
         new_pkg_list = self._packages_to_list(new_packages)
         diff_pkg_list = list(set(new_pkg_list) - set(old_pkg_list))
         return '\n'.join(
-            [pkg for pkg in new_pkg_list if self._pkg_name(pkg) not in diff_pkg_list]
+            [pkg_row for pkg_row in new_pkg_list if self._pkg_name(pkg_row) 
+                not in diff_pkg_list]
         )
-        
 
     def _get_repo(self):
         git = Github(GITHUB_ACCESS_TOKEN)
@@ -126,4 +126,4 @@ class RequirementsUpdater:
 
     @staticmethod
     def _pkg_name(pkg_row):
-        return re.sub(r'=.*', '', new_pkg)
+        return re.sub(r'=.*', '', pkg_row)
