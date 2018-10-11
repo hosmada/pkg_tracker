@@ -19,7 +19,7 @@ class RequirementsUpdater:
         self.created_at = datetime.utcnow().strftime('%Y%m%d%H%M%S')
 
     def create_pull(self):
-        self._raise_unvalid_env()
+        self._raise_invalid_env()
         if not self._need_to_commit():
             return
         repo = self._get_repo()
@@ -30,7 +30,7 @@ class RequirementsUpdater:
         self._create_pull(repo, branch, old_packages, new_packages)
 
     @staticmethod
-    def _raise_unvalid_env():
+    def _raise_invalid_env():
         if not CIRCLE_PROJECT_USERNAME:
             raise Exception("$CIRCLE_PROJECT_USERNAME isn't set")
         if not CIRCLE_PROJECT_REPONAME:
@@ -51,26 +51,29 @@ class RequirementsUpdater:
             )], base_tree
         )
         return repo.create_git_commit(
-            message="commit message",
+            message="updated dependencies!",
             parents=[latest_commit],
             tree=new_tree
         )
 
     def _get_old_and_new_packages(self):
         old_packages = os.popen('cat requirements.txt').read()
-        os.system('pip install --upgrade --no-cache-dir -r requirements.txt')
+        update_command = '''
+            awk -F "==" '{ print $1 }' requirements.txt | xargs pip install --upgrade
+            '''
+        os.system(update_command)
         new_packages = self._pure_new_packages(
             old_packages, os.popen('pip freeze').read()
         )
         return old_packages, new_packages
 
     def _pure_new_packages(self, old_packages, new_packages):
-        old_pkg_list = self._packages_to_list(old_packages)
-        new_pkg_list = self._packages_to_list(new_packages)
+        old_pkg_list = [self._pkg_name(pkg) for pkg in self._packages_to_list(old_packages)]
+        new_pkg_list = [self._pkg_name(pkg) for pkg in self._packages_to_list(new_packages)]
         diff_pkg_list = list(set(new_pkg_list) - set(old_pkg_list))
         return '\n'.join(
-            [pkg_row for pkg_row in new_pkg_list if self._pkg_name(pkg_row) 
-                not in diff_pkg_list]
+            [pkg_row for pkg_row in self._packages_to_list(new_packages) 
+                if not self._is_extra_pkg(pkg_row, diff_pkg_list)]
         )
 
     def _get_repo(self):
@@ -122,8 +125,11 @@ class RequirementsUpdater:
 
     @staticmethod
     def _packages_to_list(packages):
-        return packages.split('\n')
+        return sorted([p for in packages.split('\n') if p], key=str.upper)
 
     @staticmethod
     def _pkg_name(pkg_row):
         return re.sub(r'=.*', '', pkg_row)
+
+    def _is_extra_pkg(self, pkg, extra_pkg_list):
+        return self._pkg_name(pkg) in extra_pkg_list
